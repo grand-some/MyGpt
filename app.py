@@ -113,7 +113,7 @@ with st.sidebar:
     )
     openai_api_key = st.text_input("Enter your OpenAI API key", type="password")
     st.markdown(
-    "[💻 View this project on GitHub](https://github.com/your-username/your-repo-name)"
+    "[💻 View this project on GitHub](https://github.com/grand-some/MyGpt)"
 )      
 if openai_api_key:
     llm = ChatOpenAI(api_key=openai_api_key, 
