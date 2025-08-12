@@ -7,6 +7,7 @@ from langchain.text_splitter import CharacterTextSplitter
 from langchain.vectorstores.faiss import FAISS
 from langchain.chat_models import ChatOpenAI
 from langchain.callbacks.base import BaseCallbackHandler
+from langchain.document_loaders import PyPDFLoader, TextLoader, Docx2txtLoader
 import streamlit as st
 import os
 
@@ -46,14 +47,24 @@ def embed_file(file):
         chunk_size=600,
         chunk_overlap=100,
     )
-    loader = UnstructuredFileLoader(file_path)
-    docs = loader.load_and_split(text_splitter=splitter)
+    docs = read_docs_to_splits(file_path, splitter)
     embeddings = OpenAIEmbeddings(openai_api_key=openai_api_key)
     cached_embeddings = CacheBackedEmbeddings.from_bytes_store(embeddings, cache_dir)
     vectorstore = FAISS.from_documents(docs, cached_embeddings)
     retriever = vectorstore.as_retriever()
     return retriever
 
+
+def read_docs_to_splits(file_path, splitter):
+    if file_path.lower().endswith(".pdf"):
+        docs = PyPDFLoader(file_path).load_and_split(splitter)
+    elif file_path.lower().endswith(".txt"):
+        docs = TextLoader(file_path, encoding="utf-8").load_and_split(splitter)
+    elif file_path.lower().endswith(".docx"):
+        docs = Docx2txtLoader(file_path).load_and_split(splitter)
+    else:
+        return []
+    return docs
 
 def save_message(message, role):
     st.session_state["messages"].append({"message": message, "role": role})
@@ -116,13 +127,11 @@ with st.sidebar:
     "[💻 View this project on GitHub](https://github.com/grand-some/MyGpt)"
 )      
 if openai_api_key:
-    llm = ChatOpenAI(api_key=openai_api_key, 
-    temperature=0.1,
-    streaming=True,
-    callbacks=[
-        ChatCallbackHandler(),
-    ],
-)
+    llm = ChatOpenAI(openai_api_key=openai_api_key, 
+                 temperature=0.1,
+                 streaming=True,
+                 callbacks=[ChatCallbackHandler()]
+                 )
 
 else:
     st.error("Please enter your OpenAI API key to use the chatbot.")
